@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EG · Lager – Den Sidste Rejse</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <style>:root { --brand: #455a64; --brand-dark: #2f3e45; --brand-soft: #e8eef0; }</style>
+</head>
+<body data-api-port="5109">
+  <header>
+    <div>
+      <h1>EG · Lager</h1>
+      <p>Den Sidste Rejse – overblik over urner, kister og andre varer</p>
+    </div>
+    <label style="color:#fff">Medarbejder
+      <select id="employee-select"></select>
+    </label>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="stock">Lageroversigt</button>
+    <button data-tab="history">Historik</button>
+    <button data-tab="reorder">Genbestilling</button>
+    <button data-tab="items">Varer</button>
+  </nav>
+
+  <main>
+    <section class="tab active" id="tab-stock">
+      <div class="kpis" id="kpis"></div>
+      <div class="card">
+        <form class="toolbar" id="filter-form">
+          <label>Søg <input name="q" placeholder="Varenavn, leverandør eller placering"></label>
+          <label>Type <select name="type"></select></label>
+          <label>Sortér
+            <select name="sort"><option value="">Type</option><option value="quantity">Antal (lavest først)</option>
+              <option value="name">Navn</option><option value="updated">Seneste ændring</option></select>
+          </label>
+          <label><span><input type="checkbox" name="low" value="1"> Kun lav beholdning</span></label>
+        </form>
+        <div id="stock-table"></div>
+      </div>
+      <div class="card" id="action-panel" hidden></div>
+    </section>
+
+    <section class="tab" id="tab-history">
+      <div class="card">
+        <form class="toolbar" id="history-form">
+          <label>Vare <select name="item_id"></select></label>
+        </form>
+        <div id="history-table"></div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-reorder">
+      <div class="grid wide">
+        <div class="card">
+          <h2>Genbestillingsliste</h2>
+          <p class="muted">Varer under minimumsbeholdning. Foreslået antal fylder op til 2 × minimum.</p>
+          <div id="reorder-list"></div>
+        </div>
+        <div class="card">
+          <h2>Mest brugte varer (90 dage)</h2>
+          <div id="most-used"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-items">
+      <div class="card">
+        <h2>Opret eller redigér vare</h2>
+        <form id="item-form">
+          <input type="hidden" name="id">
+          <div class="row">
+            <label>Varenavn <input name="name" required></label>
+            <label>Type <input name="type" list="type-list" required></label>
+            <label>Antal ved oprettelse <input type="number" name="quantity" min="0"></label>
+            <label>Minimumsbeholdning <input type="number" name="min_quantity" min="0"></label>
+          </div>
+          <div class="row">
+            <label>Leverandør <input name="supplier"></label>
+            <label>Placering <input name="location"></label>
+          </div>
+          <p class="muted">Antal ændres efter oprettelse kun via Modtag, Brug eller Korrigér, så historikken altid passer.</p>
+          <div class="actions"><button>Gem vare</button><button type="button" class="secondary" data-reset>Nulstil</button></div>
+          <datalist id="type-list"></datalist>
+        </form>
+        <div id="item-table"></div>
+      </div>
+    </section>
+
+    <details class="card">
+      <summary>Seneste JSON-svar fra API'et</summary>
+      <pre id="last-response" class="json">Ingen kald endnu</pre>
+    </details>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
