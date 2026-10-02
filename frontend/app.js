@@ -26,7 +26,51 @@ async function loadInventory() {
   );
 
   renderTable($("#stock-table"), data.items, [
-    { label: "Vare", render: (i) => h("strong", {}, i.name) },
+
+    {
+  label: "Vare",
+  render: (i) => {
+    let variant = "";
+
+    try {
+      const values = JSON.parse(i.variant_options || "[]");
+
+      if (Array.isArray(values) && values.length === 1) {
+        variant = values[0];
+      }
+    } catch {
+      variant = "";
+    }
+
+    let variantLabel = "";
+
+    if (variant) {
+      const type = (i.variant_type || "").toLowerCase();
+
+      if (type === "color" || type === "farve") {
+        variantLabel = `Farve: ${variant}`;
+      } else if (type === "motif" || type === "motiv") {
+        variantLabel = `Motiv: ${variant}`;
+      } else {
+        variantLabel = `Variant: ${variant}`;
+      }
+    }
+
+    return h(
+      "div",
+      { class: "inventory-item-name" },
+      h("strong", {}, i.name),
+      variantLabel
+        ? h(
+            "span",
+            { class: "inventory-item-variant" },
+            variantLabel
+          )
+        : ""
+    );
+  },
+},
+
     { label: "Type", key: "type" },
     { label: "Antal", class: "num", render: (i) => h("strong", {}, i.quantity) },
     { label: "Min.", class: "num", key: "min_quantity" },
@@ -349,14 +393,25 @@ function renderReorderItem(item) {
         "div",
         {},
         h("strong", {}, item.name),
+item.variant_options
+  ? h(
+      "div",
+      { class: "muted" },
+      (() => {
+        try {
+          const values = JSON.parse(item.variant_options);
 
-        item.variant_options
-          ? h(
-              "div",
-              { class: "muted" },
-              `Variant: ${item.variant_options}`
-            )
-          : ""
+          if (Array.isArray(values) && values.length === 1) {
+            return `Variant: ${values[0]}`;
+          }
+
+          return `Variant: ${item.variant_options}`;
+        } catch {
+          return `Variant: ${item.variant_options}`;
+        }
+      })()
+    )
+  : ""
       ),
 
       badge(
@@ -451,8 +506,7 @@ $("#reorder-list").replaceChildren(
   renderTable($("#most-used"), mostUsed, [
     { label: "Vare", key: "name" },
     { label: "Type", key: "type" },
-    { label: "Brugt", class: "num", key: "used" },
-    { label: "Gange", class: "num", key: "times" },
+    { label: "Samlet brug", class: "num", key: "used" },
   ]);
 }
 // ---------------------------------------------------------------- Ordrer
