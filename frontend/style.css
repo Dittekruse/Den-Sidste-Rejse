@@ -1,9 +1,9 @@
 /* Fælles stylesheet – ens i alle prototyper. Kun farverne i :root er projektspecifikke. */
 :root {
-  --brand: #2583db;
-  --brand-dark: #0d0dda;
-  --brand-soft: #101ee76b;
-  --bg: #f5f6f4;
+  --brand: #087c9f;
+  --brand-dark: #075e78;
+  --brand-soft: #e5f3f7;
+  --bg: #eef2f1;
   --surface: #ffffff;
   --text: #1d201f;
   --muted: #35403b;
@@ -74,10 +74,11 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 16px;
+  border: 1px solid #e2e8eb;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(20, 50, 60, 0.05);
 }
 
 .card h2, .card h3 { margin: 0 0 12px; font-size: 1.05rem; }
@@ -189,4 +190,560 @@ pre.json {
 @media (max-width: 600px) {
   header { padding: 12px 16px; }
   .grid.wide { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------- Ordrer */
+
+.order-card {
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.order-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.order-header h3 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.order-item-name {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Status-pill */
+
+.order-status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.order-status.bestilt {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.order-status.under-behandling {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.order-status.afsendt {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.order-status.modtaget {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.order-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ----------------------------------------------------------------
+   Fremdriftslinje
+---------------------------------------------------------------- */
+
+.order-progress {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 28px;
+  padding: 0 8px;
+}
+
+.order-progress-step {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.order-progress-dot {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  border: 3px solid #e5e7eb;
+  transition: all 0.4s ease;
+}
+
+/* Gennemførte trin */
+
+.order-progress-step.completed .order-progress-dot {
+  background: #9ca3af;
+  border-color: #9ca3af;
+}
+
+/* Aktiv status – standard */
+
+.order-progress-step.active .order-progress-dot {
+  animation: orderPulse 2s infinite;
+  transform: scale(1.05);
+}
+
+/* ----------------------------------------------------------------
+   Farven på den AKTIVE status følger status-pill'en
+---------------------------------------------------------------- */
+
+/* Bestilt = lilla */
+.order-card:has(.order-status.bestilt)
+.order-progress-step.active .order-progress-dot {
+  background: #9333ea;
+  border-color: #9333ea;
+  box-shadow: 0 0 0 5px rgba(147, 51, 234, 0.15);
+}
+
+/* Under behandling = blå */
+.order-card:has(.order-status.under-behandling)
+.order-progress-step.active .order-progress-dot {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.15);
+}
+
+/* Afsendt = orange */
+.order-card:has(.order-status.afsendt)
+.order-progress-step.active .order-progress-dot {
+  background: #ea580c;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 5px rgba(234, 88, 12, 0.15);
+}
+
+/* Modtaget = grøn */
+.order-card:has(.order-status.modtaget)
+.order-progress-step.active .order-progress-dot {
+  background: #16a34a;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 5px rgba(22, 163, 74, 0.15);
+}
+
+/* ----------------------------------------------------------------
+   Linjerne
+---------------------------------------------------------------- */
+
+.order-progress-line {
+  height: 4px;
+  flex: 1;
+  min-width: 30px;
+  background: #e5e7eb;
+  margin: 0 7px;
+  border-radius: 4px;
+  transition: background 0.5s ease;
+}
+
+/* Gennemførte linjer */
+
+.order-progress-line.completed {
+  background: #9ca3af;
+}
+
+/* ----------------------------------------------------------------
+   Aktiv status giver også farve til linjen FREM TIL status
+---------------------------------------------------------------- */
+
+/* Bestilt */
+.order-card:has(.order-status.bestilt)
+.order-progress-line.completed {
+  background: #9333ea;
+}
+
+/* Under behandling */
+.order-card:has(.order-status.under-behandling)
+.order-progress-line.completed {
+  background: #2563eb;
+}
+
+/* Afsendt */
+.order-card:has(.order-status.afsendt)
+.order-progress-line.completed {
+  background: #ea580c;
+}
+
+/* Modtaget */
+.order-card:has(.order-status.modtaget)
+.order-progress-line.completed {
+  background: #16a34a;
+}
+
+/* ----------------------------------------------------------------
+   Tekster under tidslinjen
+---------------------------------------------------------------- */
+
+.order-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.order-progress-labels span {
+  flex: 1;
+  text-align: center;
+}
+
+.order-status-text {
+  margin: 16px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* ----------------------------------------------------------------
+   Lille "live" animation på den aktuelle status
+---------------------------------------------------------------- */
+
+@keyframes orderPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ----------------------------------------------------------------
+   Mobil
+---------------------------------------------------------------- */
+
+@media (max-width: 650px) {
+  .order-header {
+    flex-direction: column;
+  }
+
+  .order-progress {
+    padding: 0;
+  }
+
+  .order-progress-labels {
+    font-size: 0.65rem;
+  }
+
+  .order-progress-line {
+    min-width: 15px;
+    margin: 0 4px;
+  }
+}
+/* ----------------------------------------------------------------
+   Formular – undgå at felter og knapper strækkes i højden
+---------------------------------------------------------------- */
+
+#item-form .row {
+  align-items: start;
+}
+#item-form .row {
+  gap: 16px;
+}
+
+#item-form label {
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #52656c;
+}
+
+#item-form input,
+#item-form select {
+  min-height: 42px;
+  border: 1px solid #cfdcdf;
+  border-radius: 10px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#item-form input:focus,
+#item-form select:focus {
+  outline: none;
+  border-color: #087c9f;
+  box-shadow: 0 0 0 3px rgba(8, 124, 159, 0.10);
+}
+#item-form label {
+  align-self: start;
+}
+
+#item-form select,
+#item-form input {
+  height: auto;
+}
+
+#item-form .actions {
+  align-self: start;
+}
+.reorder-item-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 10px;
+}
+
+.reorder-item-details span {
+  display: inline-block;
+}
+/* --- Lageroversigt: mere luft og tydeligere tabel --- */
+
+#stock-table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#stock-table th {
+  padding: 12px 10px;
+  font-size: 0.85rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+#stock-table td {
+  padding: 11px 10px;
+  vertical-align: middle;
+}
+
+#stock-table tbody tr:hover {
+  background: #f7f8f9;
+}
+
+#stock-table .actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+#stock-table .actions button {
+  white-space: nowrap;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+}
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.site-logo {
+  width: 260px;
+  height: auto;
+  display: block;
+}
+
+.site-title p {
+  margin: 0;
+  font-size: 1rem;
+  color: #dce7ec;
+}
+/* --- Moderne header --- */
+
+.site-header {
+  background: #b8d7df;
+  color: #18323b;
+  padding: 20px 32px;
+  min-height: 130px;
+  box-sizing: border-box;
+}
+
+.site-brand {
+  gap: 36px;
+}
+
+.site-logo {
+  width: 390px;
+  max-width: 42vw;
+  height: auto;
+}
+
+.site-title p {
+  color: #315864;
+  font-size: 1.45rem;
+  font-weight: 500;
+    transform: translateY(22px);
+}
+
+
+/* --- Medarbejder-dropdown --- */
+
+#employee-select {
+  min-width: 150px;
+  height: 52px;
+  padding: 0 42px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #18323b;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#employee-select:focus {
+  outline: none;
+  border-color: #0b7899;
+  box-shadow: 0 0 0 3px rgba(11, 120, 153, 0.15);
+}
+/* --- Moderne navigation --- */
+
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #d6e0e4;
+}
+
+nav button {
+  position: relative;
+  padding: 18px 22px;
+  color: #34484f;
+  font-weight: 600;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+nav button:hover {
+  color: #087c9f;
+  background: #f3f8fa;
+}
+
+nav button.active {
+  color: #087c9f;
+  background: #f8fbfc;
+}
+
+nav button.active::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #087c9f;
+}
+@keyframes order-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(8, 124, 159, 0.45);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(8, 124, 159, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(8, 124, 159, 0);
+  }
+}
+.order-progress-step.active .order-progress-dot {
+  width: 14px;
+  height: 14px;
+  background: #087c9f;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 3px #087c9f;
+  animation: order-pulse 2s infinite;
+  transform: scale(1.05);
+}
+
+.order-progress-step.active {
+  color: #087c9f;
+  font-weight: 700;
+}
+
+.order-progress-step.active + .order-progress-line {
+  background: #087c9f;
+}/* --- Moderne lagerstatus --- */
+
+.badge.ok {
+  background: #e7f5ee;
+  color: #18734b;
+  border: 1px solid #bfe5d1;
+}
+
+.badge.warn {
+  background: #fff4df;
+  color: #9a6200;
+  border: 1px solid #f0d49b;
+}
+
+.badge.danger {
+  background: #fde8e8;
+  color: #b4232d;
+  border: 1px solid #efb8bd;
+}
+
+.badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+/* --- Automatisk genbestilling --- */
+
+#auto-reorder {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0;
+  margin: 0;
+  border: 2px solid #9db5bd;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+}
+
+#auto-reorder:checked {
+  background: #087c9f;
+  border-color: #087c9f;
+}
+
+#auto-reorder:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+#auto-reorder {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  padding: 0;
+  margin: 0;
+  accent-color: #087c9f;
 }

@@ -74,23 +74,43 @@ function fillSelect(select, rows, label, { valueKey = "id", placeholder } = {}) 
   );
 }
 
-// Læser en <form> til et JSON-objekt. Talfelter bliver til tal, tomme felter udelades.
+// Læser en <form> til et JSON-objekt.
+// Talfelter bliver til tal, tomme felter udelades.
+// Variantmuligheder gemmes som JSON.
 function formToJson(form) {
   const data = {};
+
   for (const field of form.elements) {
     if (!field.name || field.disabled) continue;
+
     if (field.type === "checkbox") {
       if (field.dataset.list !== undefined) {
         data[field.name] ??= [];
         if (field.checked) data[field.name].push(field.value);
-      } else data[field.name] = field.checked;
+      } else {
+        data[field.name] = field.checked;
+      }
       continue;
     }
+
     if (field.value === "") continue;
-    data[field.name] = field.type === "number" || field.dataset.number !== undefined
-      ? Number(field.value)
-      : field.value;
+
+    if (field.name === "variant_options") {
+      data[field.name] = JSON.stringify(
+        field.value
+          .split(",")
+          .map(option => option.trim())
+          .filter(option => option !== "")
+      );
+      continue;
+    }
+
+    data[field.name] =
+      field.type === "number" || field.dataset.number !== undefined
+        ? Number(field.value)
+        : field.value;
   }
+
   return data;
 }
 
@@ -157,8 +177,19 @@ function bindCrudForm(form, resource, onSaved) {
 
 function fillForm(form, row) {
   for (const field of form.elements) {
-    if (field.name && field.name in row) field.value = row[field.name] ?? "";
+    if (!field.name || !(field.name in row)) continue;
+
+    if (field.name === "variant_options" && row[field.name]) {
+      try {
+        field.value = JSON.parse(row[field.name]).join(", ");
+      } catch {
+        field.value = row[field.name];
+      }
+    } else {
+      field.value = row[field.name] ?? "";
+    }
   }
+
   form.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 

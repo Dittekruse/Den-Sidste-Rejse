@@ -1,0 +1,59 @@
+7 | 5701000000414 | Begravelseskiste med perlebort | Kiste
+9 | 5701000000483 | Egetræskiste | Kiste
+10 | 5701000000490 | Mahognikiste | Kiste
+11 | 5701000000506 | Klassisk hvid begravelseskiste | Kiste
+12 | 5701000000513 | Fyrretræskiste | Kiste
+13 | 5701000000520 | Klassisk hvid kiste til kremering m guirlande | Kiste
+14 | 5701000000537 | Klassisk hvid kiste til kremering | Kiste
+15 | 5701000000544 | Ligklæde, hvid | Tekstil
+16 | 5701000000551 | Pude og dyne sæt | Tekstil
+17 | 5701000000568 | Mindeprotokol | Tryksag
+18 | 5701000000575 | Sorgkort (pakke á 25) | Tryksag
+19 | 5701000000582 | Kistepynt – hvide roser | Pynt
+20 | 5701000000438 | Farvet kiste til kremering – Hvid | Kiste
+21 | 5701000000599 | Farvet kiste til kremering – Hvid | Kiste
+22 | 5701000000421 | Farvet kiste til kremering – Sort | Kiste
+23 | 5701000000285 | Ler- eller keramikurne – Gul | Urne
+24 | 5701000000117 | Barkurne – Rød | Urne
+25 | 5701000000155 | Heimurne – plantefiber – Rød | Urne
+26 | 5701000000049 | Askerør til askespredning – Nattehimmel | Urne
+27 | 5701000000018 | Askerør til askespredning – Solnedgang | Urne
+28 | 5701000000025 | Askerør til askespredning – Blå himmel | Urne
+29 | 5701000000032 | Askerør til askespredning – Fugl | Urne
+30 | 5701000000056 | Askerør til askespredning – Sommerfugl | Urne
+31 | 5701000000063 | Askerør til askespredning – Skov | Urne
+32 | 5701000000070 | Askerør til askespredning – Andet motiv | Urne
+33 | 5701000000087 | Barkurne – Sort | Urne
+34 | 5701000000094 | Barkurne – Hvid | Urne
+35 | 5701000000100 | Barkurne – Blå | Urne
+36 | 5701000000124 | Barkurne – Grøn | Urne
+37 | 5701000000131 | Barkurne – Anden farve | Urne
+38 | 5701000000148 | Heimurne – plantefiber – Sort | Urne
+39 | 5701000000162 | Heimurne – plantefiber – Hvid | Urne
+40 | 5701000000179 | Heimurne – plantefiber – Grøn | Urne
+41 | 5701000000186 | Heimurne – plantefiber – Blå | Urne
+42 | 5701000000193 | Heimurne – plantefiber – Anden farve | Urne
+43 | 5701000000209 | Ler- eller keramikurne – Sort | Urne
+44 | 5701000000216 | Ler- eller keramikurne – Grå | Urne
+45 | 5701000000223 | Ler- eller keramikurne – Mørkerød | Urne
+46 | 5701000000230 | Ler- eller keramikurne – Beige | Urne
+47 | 5701000000247 | Ler- eller keramikurne – Brun | Urne
+48 | 5701000000254 | Ler- eller keramikurne – Hvid | Urne
+49 | 5701000000261 | Ler- eller keramikurne – Blå | Urne
+50 | 5701000000278 | Ler- eller keramikurne – Grøn | Urne
+51 | 5701000000292 | Ler- eller keramikurne – Rød | Urne
+52 | 5701000000308 | Ler- eller keramikurne – Anden farve | Urne
+53 | 5701000000315 | Od-stone urne – plantefiber – Grå | Urne
+54 | 5701000000322 | Od-stone urne – plantefiber – Blå | Urne
+55 | 5701000000339 | Od-stone urne – plantefiber – Beige | Urne
+56 | 5701000000346 | Od-stone urne – plantefiber – Anden farve | Urne
+57 | 5701000000353 | Sfera søkugle – presset sandsten – Rød | Urne
+58 | 5701000000360 | Sfera søkugle – presset sandsten – Brun | Urne
+59 | 5701000000377 | Sfera søkugle – presset sandsten – Grå | Urne
+60 | 5701000000384 | Sfera søkugle – presset sandsten – Blå | Urne
+61 | 5701000000391 | Sfera søkugle – presset sandsten – Grøn | Urne
+62 | 5701000000407 | Sfera søkugle – presset sandsten – Anden farve | Urne
+63 | 5701000000445 | Farvet kiste til kremering – Rød | Kiste
+64 | 5701000000452 | Farvet kiste til kremering – Blå | Kiste
+65 | 5701000000469 | Farvet kiste til kremering – Grøn | Kiste
+66 | 5701000000476 | Farvet kiste til kremering – Anden farve | Kiste

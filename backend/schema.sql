@@ -7,14 +7,19 @@ CREATE TABLE employee (
 
 -- Vare
 CREATE TABLE item (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    name         TEXT NOT NULL,
-    type         TEXT NOT NULL,                  -- Urne, Kiste, Tekstil, Tryksag, Pynt
-    quantity     INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    min_quantity INTEGER NOT NULL DEFAULT 0,
-    supplier     TEXT,
-    location     TEXT,
-    updated_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL,
+    type            TEXT NOT NULL,
+    barcode         TEXT UNIQUE,
+    quantity        INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    min_quantity    INTEGER NOT NULL DEFAULT 0,
+    supplier        TEXT,
+    location        TEXT,
+    variant_type    TEXT,
+    variant_options TEXT,
+    auto_reorder    INTEGER NOT NULL DEFAULT 0,
+    reorder_quantity INTEGER NOT NULL DEFAULT 0,
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
 
 -- Lagerændring: før, ændring og efter gemmes, så man kan se hvorfor antallet har ændret sig
@@ -29,4 +34,15 @@ CREATE TABLE stock_change (
     employee    TEXT NOT NULL,
     case_ref    TEXT,                             -- evt. kobling til en sag i EG
     note        TEXT
+);
+CREATE TABLE IF NOT EXISTS purchase_order (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_number    TEXT NOT NULL UNIQUE,
+    item_id         INTEGER NOT NULL,
+    quantity        INTEGER NOT NULL CHECK (quantity > 0),
+    supplier        TEXT,
+    status          TEXT NOT NULL DEFAULT 'BESTILT',
+    ordered_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    received_at     TEXT,
+    FOREIGN KEY (item_id) REFERENCES item(id)
 );

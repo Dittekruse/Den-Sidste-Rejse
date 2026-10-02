@@ -9,40 +9,84 @@
   <style>:root { --brand: #455a64; --brand-dark: #2f3e45; --brand-soft: #e8eef0; }</style>
 </head>
 <body data-api-port="5109">
-  <header>
-    <div>
-      <h1>EG · Lager</h1>
-      <p>Den Sidste Rejse – overblik over urner, kister og andre varer</p>
-    </div>
-    <label style="color:#fff">Medarbejder
-      <select id="employee-select"></select>
-    </label>
-  </header>
 
+<header class="site-header">
+  <div class="site-brand">
+    <img src="logo.png" alt="Den Sidste Rejse" class="site-logo">
+
+    <div class="site-title">
+      <p>Lagerstyring og vareoverblik</p>
+    </div>
+  </div>
+</header>
   <nav class="tabs">
     <button class="active" data-tab="stock">Lageroversigt</button>
     <button data-tab="history">Historik</button>
     <button data-tab="reorder">Genbestilling</button>
+    <button data-tab="orders">Ordrer</button>
     <button data-tab="items">Varer</button>
   </nav>
 
+
   <main>
     <section class="tab active" id="tab-stock">
-      <div class="kpis" id="kpis"></div>
-      <div class="card">
-        <form class="toolbar" id="filter-form">
-          <label>Søg <input name="q" placeholder="Varenavn, leverandør eller placering"></label>
-          <label>Type <select name="type"></select></label>
-          <label>Sortér
-            <select name="sort"><option value="">Type</option><option value="quantity">Antal (lavest først)</option>
-              <option value="name">Navn</option><option value="updated">Seneste ændring</option></select>
+
+      <div class="card barcode-card">
+        <h2>Scan vare</h2>
+        <p class="muted">Scan stregkoden på varen for at finde den i lageret.</p>
+
+        <form id="barcode-form">
+          <label>
+            Stregkode
+            <input
+            id="barcode-input"
+            name="barcode"
+            placeholder="Scan stregkode..."
+            autocomplete="off"
+            autofocus
+            >
           </label>
-          <label><span><input type="checkbox" name="low" value="1"> Kun lav beholdning</span></label>
+
+          <div class="actions">
+            <button type="button" id="camera-scan-button">
+              scan med kamera
+            </button>
+          </div>
         </form>
-        <div id="stock-table"></div>
+
+      <div id="camera-scanner" style="display:none; margin-top:20px;"></div>
+        <div id="barcode-result"></div>
       </div>
-      <div class="card" id="action-panel" hidden></div>
-    </section>
+
+      <div class="kpis" id="kpis"></div>
+
+<div class="employee-selector">
+  <label for="employee-select">Medarbejder</label>
+  <select id="employee-select"></select>
+</div>
+
+<div class="card">
+  <form class="toolbar" id="filter-form">
+    <label>Søg <input name="q" placeholder="Varenavn, leverandør eller placering"></label>
+    <label>Type <select name="type"></select></label>
+    <label>Sortér
+      <select name="sort">
+        <option value="">Type</option>
+        <option value="quantity">Antal (lavest først)</option>
+        <option value="name">Navn</option>
+        <option value="updated">Seneste ændring</option>
+      </select>
+    </label>
+    <label>
+      <span><input type="checkbox" name="low" value="1"> Kun lav beholdning</span>
+    </label>
+  </form>
+
+  <div id="stock-table"></div>
+</div>
+
+<div class="card" id="action-panel" hidden></div>
+</section>
 
     <section class="tab" id="tab-history">
       <div class="card">
@@ -57,7 +101,9 @@
       <div class="grid wide">
         <div class="card">
           <h2>Genbestillingsliste</h2>
-          <p class="muted">Varer under minimumsbeholdning. Foreslået antal fylder op til 2 × minimum.</p>
+<p class="muted">
+  Overblik over varer under minimumsbeholdningen og deres automatiske genbestilling.
+</p>
           <div id="reorder-list"></div>
         </div>
         <div class="card">
@@ -67,37 +113,167 @@
       </div>
     </section>
 
+    <section class="tab" id="tab-orders">
+  <div class="card">
+    <div class="section-header">
+      <div>
+        <h2>Ordrer</h2>
+        <p class="muted">
+          Følg status på dine genbestillinger.
+        </p>
+      </div>
+    </div>
+
+    <div id="order-list"></div>
+  </div>
+</section>
+
     <section class="tab" id="tab-items">
       <div class="card">
         <h2>Opret eller redigér vare</h2>
         <form id="item-form">
-          <input type="hidden" name="id">
-          <div class="row">
-            <label>Varenavn <input name="name" required></label>
-            <label>Type <input name="type" list="type-list" required></label>
-            <label>Antal ved oprettelse <input type="number" name="quantity" min="0"></label>
-            <label>Minimumsbeholdning <input type="number" name="min_quantity" min="0"></label>
-          </div>
-          <div class="row">
-            <label>Leverandør <input name="supplier"></label>
-            <label>Placering <input name="location"></label>
-          </div>
-          <p class="muted">Antal ændres efter oprettelse kun via Modtag, Brug eller Korrigér, så historikken altid passer.</p>
-          <div class="actions"><button>Gem vare</button><button type="button" class="secondary" data-reset>Nulstil</button></div>
-          <datalist id="type-list"></datalist>
-        </form>
+  <input type="hidden" name="id">
+
+  <div class="row">
+    <label>
+      Type
+      <select name="type" id="item-type" required>
+        <option value="">Vælg type</option>
+        <option value="Urne">Urne</option>
+        <option value="Kiste">Kiste</option>
+        <option value="Tekstil">Tekstil</option>
+        <option value="Tryksager">Tryksager</option>
+        <option value="Dekoration">Dekoration</option>
+      </select>
+    </label>
+
+    <label>
+      Vare
+      <select name="name" id="item-product" required disabled>
+        <option value="">Vælg først type</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="row">
+    <label>
+      Variant
+      <select name="variant_options" id="variant-options" disabled>
+        <option value="">Ingen variant</option>
+      </select>
+    </label>
+
+    <div id="other-variant-row" style="display: none;">
+      <label>
+        Farve
+        <input
+          type="text"
+          name="other_variant"
+          id="other-variant"
+          placeholder="Skriv farve"
+        >
+      </label>
+    </div>
+  </div>
+
+  <div class="row">
+    <label>
+        <span class="field-label">
+      Nuværende antal på lager
+          <span class="field-help" title="Det antal stk., I har på lager lige nu.">?</span>
+        </span>
+          <input
+        type="number"
+        name="quantity"
+        min="0"
+        value="0"
+      >
+    </label>
+
+    <label>
+        <span class="field-label">
+      Minimumsbeholdning
+          <span class="field-help" title="Det laveste antal stk., I ønsker at have på lager. Når lageret kommer under dette antal, kan der oprettes en genbestilling.">?</span>
+        </span>
+          <input
+        type="number"
+        name="min_quantity"
+        min="0"
+        value="0"
+      >
+    </label>
+  </div>
+
+  <div class="row">
+    <label>
+      Leverandør
+      <input name="supplier">
+    </label>
+
+    <label>
+      Placering
+      <input
+        name="location"
+        placeholder="Fx Lager 1, Reol A3"
+      >
+    </label>
+  </div>
+
+  <div class="card">
+    <h3>Automatisk genbestilling</h3>
+
+    <label>
+      <input
+        type="checkbox"
+        name="auto_reorder"
+        id="auto-reorder"
+      >
+      Aktivér automatisk genbestilling
+    </label>
+
+    <div id="reorder-settings" style="display: none; margin-top: 10px;">
+      <label>
+          <span class="field-label">
+        Genbestillingsantal
+              <span class="field-help" title="Antallet af stk., der automatisk bestilles, når lageret kommer under minimumsbeholdningen.">?</span>
+          </span>
+              <input
+          type="number"
+          name="reorder_quantity"
+          id="reorder-quantity"
+          min="1"
+          value="1"
+        >
+      </label>
+
+      <p class="muted">
+        Når varen kommer under minimumsbeholdningen, oprettes der automatisk en genbestilling på dette antal.
+      </p>
+    </div>
+  </div>
+
+  <p class="muted">
+    Antal ændres efter oprettelse kun via Modtag, Brug eller Korrigér,
+    så historikken altid passer.
+  </p>
+
+  <div class="actions">
+    <button>Gem vare</button>
+    <button type="button" class="secondary" data-reset>Nulstil</button>
+  </div>
+
+  <datalist id="type-list"></datalist>
+</form>
         <div id="item-table"></div>
       </div>
     </section>
 
-    <details class="card">
-      <summary>Seneste JSON-svar fra API'et</summary>
-      <pre id="last-response" class="json">Ingen kald endnu</pre>
-    </details>
+   
   </main>
 
   <div id="toast" class="toast"></div>
   <script src="api.js"></script>
-  <script src="app.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="app.js"></script>
 </body>
 </html>

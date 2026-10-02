@@ -49,7 +49,201 @@ function kpi(value, label) {
 
 $("#filter-form").addEventListener("input", () => loadInventory());
 $("#filter-form").addEventListener("submit", (event) => event.preventDefault());
+// ---------------------------------------------------------------- Stregkodescanner
+$("#barcode-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
 
+  const input = $("#barcode-input");
+  const barcode = input.value.trim();
+  const result = $("#barcode-result");
+
+  if (!barcode) return;
+
+  result.replaceChildren(
+    h("p", { class: "muted" }, "Søger...")
+  );
+
+  try {
+    const data = await api(`/items/barcode/${encodeURIComponent(barcode)}`);
+    const item = data.item;
+
+    result.replaceChildren(
+      h("div", { class: "barcode-result" },
+        h("h3", {}, item.name),
+        h("p", {}, `Stregkode: ${item.barcode}`),
+        h("p", {}, `Lager: ${item.quantity} stk. · Minimum: ${item.min_quantity}`),
+        h("p", {}, `Placering: ${item.location || "Ikke angivet"}`),
+        h("div", { class: "actions" },
+          h("button", {
+            type: "button",
+            onclick: () => openAction(item, "use"),
+          }, "Brug vare"),
+          h("button", {
+            type: "button",
+            class: "secondary",
+            onclick: () => {
+              result.replaceChildren();
+              input.value = "";
+              input.focus();
+            },
+          }, "Luk")
+        )
+      )
+    );
+  } catch (err) {
+    result.replaceChildren(
+      h("p", { class: "error" }, `Ingen vare fundet med stregkoden ${barcode}`)
+    );
+  }
+
+  input.focus();
+});
+
+// ---------------------------------------------------------------- Kamerascanner
+// ---------------------------------------------------------------- Kamerascanner
+let html5QrCode = null;
+
+$("#camera-scan-button").addEventListener("click", async () => {
+  const scannerElement = $("#camera-scanner");
+  const button = $("#camera-scan-button");
+
+  if (scannerElement.style.display === "none") {
+    scannerElement.style.display = "block";
+    button.textContent = "✕ Luk kamera";
+
+    html5QrCode = new Html5Qrcode("camera-scanner");
+
+    try {
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 320, height: 140 },
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.CODE_128,
+          ],
+        },
+        async (decodedText) => {
+          try {
+            // Sørg for at vi kun behandler scanningen én gang
+            const barcode = String(decodedText).trim();
+
+            console.log("Scannet stregkode:", barcode);
+
+            // Stop kameraet
+            await html5QrCode.stop();
+            await html5QrCode.clear();
+            html5QrCode = null;
+
+            scannerElement.style.display = "none";
+            button.textContent = "📷 Scan med kamera";
+
+            // Find varen direkte via stregkoden
+            const data = await api(
+              `/items/barcode/${encodeURIComponent(barcode)}`
+            );
+
+            const item = data.item;
+
+            // Træk automatisk 1 stk. fra lageret
+            const result = await api(`/items/${item.id}/use`, {
+              method: "POST",
+              body: {
+                amount: 1,
+                employee: state.employee,
+              },
+            });
+
+            // Vis resultatet
+            $("#barcode-result").replaceChildren(
+              h(
+                "div",
+                { class: "barcode-result" },
+                h("h3", {}, "Vare registreret"),
+                h("p", {}, item.name),
+                h(
+                  "p",
+                  {},
+                  `1 stk. brugt · Ny beholdning: ${result.item.quantity} stk.`
+                )
+              )
+            );
+
+            // Opdater hele systemet
+            await loadAll();
+
+            toast(
+              `${item.name}: 1 stk. trukket fra lageret`,
+              "success"
+            );
+
+          } catch (error) {
+            console.error("Scannerfejl:", error);
+
+            if (html5QrCode) {
+              try {
+                await html5QrCode.stop();
+              } catch {}
+
+              try {
+                await html5QrCode.clear();
+              } catch {}
+
+              html5QrCode = null;
+            }
+
+            scannerElement.style.display = "none";
+            button.textContent = "📷 Scan med kamera";
+
+            $("#barcode-result").replaceChildren(
+              h(
+                "p",
+                { class: "error" },
+                error?.message || "Kunne ikke finde eller registrere den scannede vare."
+              )
+            );
+          }
+        }
+      );
+    } catch (error) {
+      console.error(error);
+
+      scannerElement.style.display = "none";
+      button.textContent = "📷 Scan med kamera";
+
+      toast(
+        "Kunne ikke åbne kameraet. Tjek kamera-tilladelsen.",
+        "error"
+      );
+
+      if (html5QrCode) {
+        try {
+          await html5QrCode.clear();
+        } catch {}
+
+        html5QrCode = null;
+      }
+    }
+
+  } else {
+
+    if (html5QrCode) {
+      try {
+        await html5QrCode.stop();
+      } catch {}
+
+      try {
+        await html5QrCode.clear();
+      } catch {}
+
+      html5QrCode = null;
+    }
+
+    scannerElement.style.display = "none";
+    button.textContent = "📷 Scan med kamera";
+  }
+});
 // ---------------------------------------------------------------- Registrér ændring (modtag / brug / korrektion)
 const ACTIONS = {
   receive: { title: "Modtag varer", button: "Registrér modtagelse" },
@@ -75,7 +269,27 @@ function openAction(item, action) {
     const result = await run(() => api(`/items/${item.id}/${action}`, {
       method: "POST", body: { ...formToJson(form), employee: state.employee },
     }), (r) => `${r.item.name}: ${r.change.before} → ${r.change.after} stk.`);
-    if (result.low_stock_warning) setTimeout(() => toast(`⚠ ${result.low_stock_warning}`, "error"), 1200);
+    if (result.low_stock_warning) {
+  let message = result.low_stock_warning;
+
+  try {
+    const orderData = await api("/orders");
+
+    const activeOrder = orderData.orders?.find(
+      (order) =>
+        order.item_id === item.id &&
+        ["BESTILT", "UNDER_BEHANDLING", "AFSENDT"].includes(order.status)
+    );
+
+    if (activeOrder) {
+      message = `${result.low_stock_warning} — automatisk genbestilling oprettet: ${activeOrder.order_number} (${activeOrder.quantity} stk.)`;
+    }
+  } catch (error) {
+    console.error("Kunne ikke hente ordrestatus:", error);
+  }
+
+  setTimeout(() => toast(`⚠ ${message}`, "error"), 1200);
+}   
     panel.hidden = true;
     loadAll();
   });
@@ -112,13 +326,128 @@ $("#history-form").addEventListener("change", loadHistory);
 // ---------------------------------------------------------------- Genbestilling og statistik
 async function loadReorder() {
   const [groups, mostUsed] = await Promise.all([api("/reorder-list"), api("/stats/most-used")]);
-  $("#reorder-list").replaceChildren(...(groups.length
-    ? groups.map((g) => h("div", { class: "card" },
-        h("h3", {}, g.supplier),
-        h("ul", { class: "list" }, g.items.map((i) => h("li", {},
-          badge(i.status, STATUS[i.status]), ` ${i.name}: ${i.quantity} på lager (min. ${i.min_quantity}) → bestil `,
-          h("strong", {}, `${i.reorder_quantity} stk.`))))))
-    : [h("p", { class: "empty" }, "Intet skal bestilles 🎉")]));
+  const allItems = groups.flatMap((g) =>
+  g.items.map((item) => ({
+    ...item,
+    supplier: g.supplier
+  }))
+);
+
+const automaticItems = allItems.filter((item) => item.auto_reorder);
+const manualItems = allItems.filter((item) => !item.auto_reorder);
+
+function renderReorderItem(item) {
+  return h(
+    "div",
+    { class: "reorder-item" },
+
+    h(
+      "div",
+      { class: "reorder-item-header" },
+
+      h(
+        "div",
+        {},
+        h("strong", {}, item.name),
+
+        item.variant_options
+          ? h(
+              "div",
+              { class: "muted" },
+              `Variant: ${item.variant_options}`
+            )
+          : ""
+      ),
+
+      badge(
+        "Lav beholdning",
+        STATUS.LAV
+      )
+    ),
+
+    h(
+      "div",
+      { class: "reorder-item-details" },
+
+      h("span", {}, `Lager: ${item.quantity} stk.`),
+      h("span", {}, `Minimum: ${item.min_quantity} stk.`),
+
+      h(
+        "span",
+        {},
+        `Automatisk genbestilling: ${
+          item.auto_reorder ? "Aktiv" : "Deaktiveret"
+        }`
+      ),
+
+      item.auto_reorder
+        ? h(
+            "span",
+            {},
+            `Genbestiller automatisk: ${item.reorder_quantity} stk.`
+          )
+        : "",
+
+      h(
+        "span",
+        {},
+        `Leverandør: ${item.supplier || "Ukendt leverandør"}`
+      )
+    )
+  );
+}
+
+$("#reorder-list").replaceChildren(
+  h(
+    "div",
+    { class: "card" },
+
+    h("h2", {}, "Automatisk genbestilling"),
+
+    h(
+      "p",
+      { class: "muted" },
+      "Varer under minimum, hvor systemet automatisk opretter en genbestilling."
+    ),
+
+    automaticItems.length
+      ? h(
+          "div",
+          { class: "reorder-items" },
+          ...automaticItems.map(renderReorderItem)
+        )
+      : h(
+          "p",
+          { class: "empty" },
+          "Ingen varer kræver automatisk genbestilling."
+        )
+  ),
+
+  h(
+    "div",
+    { class: "card" },
+
+    h("h2", {}, "Manuel genbestilling"),
+
+    h(
+      "p",
+      { class: "muted" },
+      "Varer under minimum, hvor genbestillingen skal foretages manuelt."
+    ),
+
+    manualItems.length
+      ? h(
+          "div",
+          { class: "reorder-items" },
+          ...manualItems.map(renderReorderItem)
+        )
+      : h(
+          "p",
+          { class: "empty" },
+          "Ingen varer kræver manuel genbestilling."
+        )
+  )
+);
   renderTable($("#most-used"), mostUsed, [
     { label: "Vare", key: "name" },
     { label: "Type", key: "type" },
@@ -126,11 +455,429 @@ async function loadReorder() {
     { label: "Gange", class: "num", key: "times" },
   ]);
 }
+// ---------------------------------------------------------------- Ordrer
+async function loadOrders() {
+  const container = $("#order-list");
 
+  container.replaceChildren(
+    h("p", { class: "muted" }, "Henter ordrer...")
+  );
+
+  try {
+    const data = await api("/orders");
+
+    if (!data.orders || data.orders.length === 0) {
+      container.replaceChildren(
+        h("p", { class: "muted" }, "Der er ingen ordrer endnu.")
+      );
+      return;
+    }
+
+    const statuses = [
+      {
+        key: "BESTILT",
+        label: "Bestilt",
+      },
+      {
+        key: "UNDER_BEHANDLING",
+        label: "Under behandling",
+      },
+      {
+        key: "AFSENDT",
+        label: "Afsendt",
+      },
+      {
+        key: "MODTAGET",
+        label: "Modtaget",
+      },
+    ];
+
+    const statusText = {
+      BESTILT: "Ordren er registreret",
+      UNDER_BEHANDLING: "Ordren behandles hos leverandøren",
+      AFSENDT: "Ordren er afsendt og er på vej",
+      MODTAGET: "Ordren er modtaget på lageret",
+    };
+
+    container.replaceChildren(
+      ...data.orders.map((order) => {
+        const currentIndex = statuses.findIndex(
+          (status) => status.key === order.status
+        );
+
+        const progress = h(
+          "div",
+          { class: "order-progress" },
+          ...statuses.flatMap((status, index) => {
+            const stepClass =
+              index < currentIndex
+                ? "order-progress-step completed"
+                : index === currentIndex
+                  ? "order-progress-step active"
+                  : "order-progress-step";
+
+            const step = h(
+              "div",
+              { class: stepClass },
+              h("div", { class: "order-progress-dot" })
+            );
+
+            if (index < statuses.length - 1) {
+              const lineClass =
+                index < currentIndex
+                  ? "order-progress-line completed"
+                  : "order-progress-line";
+
+              return [
+                step,
+                h("div", { class: lineClass }),
+              ];
+            }
+
+            return [step];
+          })
+        );
+
+        const labels = h(
+          "div",
+          { class: "order-progress-labels" },
+          ...statuses.map((status) =>
+            h(
+              "span",
+              {},
+              status.label
+            )
+          )
+        );
+
+        const statusClass = order.status
+          .toLowerCase()
+          .replace("_", "-");
+
+        return h(
+          "div",
+          { class: "card order-card" },
+
+          h(
+            "div",
+            { class: "order-header" },
+            h(
+              "div",
+              {},
+              h("h3", {}, order.order_number),
+              h(
+  "div",
+  {},
+  h(
+    "p",
+    { class: "order-item-name" },
+    order.item_name
+  ),
+  order.variant_options
+    ? h(
+        "p",
+        { class: "muted" },
+        `Variant: ${order.variant_options}`
+      )
+    : ""
+)
+            ),
+
+            h(
+              "span",
+              { class: `order-status ${statusClass}` },
+              statuses[currentIndex]?.label || order.status
+            )
+          ),
+
+          h(
+            "div",
+            { class: "order-details" },
+            h("span", {}, `${order.quantity} stk.`),
+            h(
+              "span",
+              {},
+              `Leverandør: ${order.supplier || "Ikke angivet"}`
+            )
+          ),
+
+          progress,
+
+          labels,
+
+          h(
+            "p",
+            { class: "order-status-text" },
+            statusText[order.status] || ""
+          )
+        );
+      })
+    );
+  } catch (err) {
+    console.error(err);
+
+    container.replaceChildren(
+      h(
+        "p",
+        { class: "error" },
+        "Kunne ikke hente ordrerne."
+      )
+    );
+  }
+}
 // ---------------------------------------------------------------- Varer (CRUD)
+function setupVariantSelectors() {
+  const typeSelect = document.querySelector("#item-type");
+  const productSelect = document.querySelector("#item-product");
+  const variantOptionsSelect = document.querySelector("#variant-options");
+  const otherVariantRow = document.querySelector("#other-variant-row");
+  const otherVariantInput = document.querySelector("#other-variant");
+  const autoReorderCheckbox = document.querySelector("#auto-reorder");
+  const reorderSettings = document.querySelector("#reorder-settings");
+
+  const products = {
+    "Urne": {
+      "Askerør til askespredning": {
+        variantType: "Motiv",
+        options: [
+          "Solnedgang",
+          "Blå himmel",
+          "Fugl",
+          "Nattehimmel",
+          "Sommerfugl",
+          "Skov",
+          "Andet motiv"
+        ]
+      },
+
+      "Barkurne": {
+        variantType: "Farve",
+        options: [
+          "Sort",
+          "Hvid",
+          "Blå",
+          "Rød",
+          "Grøn",
+          "Anden farve"
+        ]
+      },
+
+      "Heimurne – plantefiber": {
+        variantType: "Farve",
+        options: [
+          "Sort",
+          "Rød",
+          "Hvid",
+          "Grøn",
+          "Blå",
+          "Anden farve"
+        ]
+      },
+
+      "Ler- eller keramikurne": {
+        variantType: "Farve",
+        options: [
+          "Sort",
+          "Grå",
+          "Mørkerød",
+          "Beige",
+          "Brun",
+          "Hvid",
+          "Blå",
+          "Grøn",
+          "Gul",
+          "Rød",
+          "Anden farve"
+        ]
+      },
+
+      "Od-stone urne – plantefiber": {
+        variantType: "Farve",
+        options: [
+          "Grå",
+          "Blå",
+          "Beige",
+          "Anden farve"
+        ]
+      },
+
+      "Sfera søkugle – presset sandsten": {
+        variantType: "Farve",
+        options: [
+          "Rød",
+          "Brun",
+          "Grå",
+          "Blå",
+          "Grøn",
+          "Anden farve"
+        ]
+      }
+    },
+
+   "Kiste": {
+  "Begravelseskiste med perlebort": {},
+  
+  "Farvet kiste til kremering": {
+    variantType: "Farve",
+    options: [
+      "Sort",
+      "Hvid",
+      "Rød",
+      "Blå",
+      "Grøn",
+      "Anden farve"
+    ]
+  },
+
+  "Egetræskiste": {},
+  
+  "Mahognikiste": {},
+  
+  "Klassisk hvid begravelseskiste": {},
+  
+  "Fyrretræskiste": {},
+  
+  "Klassisk hvid kiste til kremering m guirlande": {},
+  
+  "Klassisk hvid kiste til kremering": {}
+},
+
+    "Tekstil": {},
+    "Tryksager": {},
+    "Dekoration": {}
+  };
+
+  function resetProduct() {
+    productSelect.innerHTML =
+      '<option value="">Vælg først type</option>';
+
+    productSelect.disabled = true;
+
+    resetVariant();
+  }
+
+  function resetVariant() {
+    variantOptionsSelect.innerHTML =
+      '<option value="">Ingen variant</option>';
+
+    variantOptionsSelect.disabled = true;
+
+    otherVariantRow.style.display = "none";
+    otherVariantInput.value = "";
+  }
+
+  function updateProducts() {
+    resetProduct();
+
+    const selectedType = typeSelect.value;
+    const typeProducts = products[selectedType];
+
+    if (!typeProducts) {
+      return;
+    }
+
+    const productNames = Object.keys(typeProducts);
+
+    if (productNames.length === 0) {
+      productSelect.innerHTML =
+        '<option value="">Ingen produkter oprettet endnu</option>';
+      return;
+    }
+
+    productSelect.innerHTML =
+      '<option value="">Vælg vare</option>';
+
+    for (const productName of productNames) {
+      const option = document.createElement("option");
+
+      option.value = productName;
+      option.textContent = productName;
+
+      productSelect.appendChild(option);
+    }
+
+    productSelect.disabled = false;
+  }
+
+  function updateVariants() {
+    resetVariant();
+
+    const selectedType = typeSelect.value;
+    const selectedProduct = productSelect.value;
+
+    const product =
+      products[selectedType]?.[selectedProduct];
+
+    if (!product || !product.options?.length) {
+      return;
+    }
+
+    variantOptionsSelect.innerHTML =
+      `<option value="">Vælg ${product.variantType.toLowerCase()}</option>`;
+
+    for (const optionText of product.options) {
+      const option = document.createElement("option");
+
+      option.value = optionText;
+      option.textContent = optionText;
+
+      variantOptionsSelect.appendChild(option);
+    }
+
+    variantOptionsSelect.disabled = false;
+  }
+
+  function checkForOtherVariant() {
+    const value = variantOptionsSelect.value;
+
+    if (
+      value === "Anden farve" ||
+      value === "Andet motiv"
+    ) {
+      otherVariantRow.style.display = "";
+      otherVariantInput.required = true;
+    } else {
+      otherVariantRow.style.display = "none";
+      otherVariantInput.required = false;
+      otherVariantInput.value = "";
+    }
+  }
+
+  function updateReorderSettings() {
+    if (autoReorderCheckbox.checked) {
+      reorderSettings.style.display = "";
+    } else {
+      reorderSettings.style.display = "none";
+    }
+  }
+
+  typeSelect.addEventListener(
+    "change",
+    updateProducts
+  );
+
+  productSelect.addEventListener(
+    "change",
+    updateVariants
+  );
+
+  variantOptionsSelect.addEventListener(
+    "change",
+    checkForOtherVariant
+  );
+
+  autoReorderCheckbox.addEventListener(
+    "change",
+    updateReorderSettings
+  );
+
+  resetProduct();
+  updateReorderSettings();
+}
 async function loadItems() {
   const items = await api("/items");
   const form = $("#item-form");
+
   renderTable($("#item-table"), items, [
     { label: "Varenavn", key: "name" },
     { label: "Type", key: "type" },
@@ -144,8 +891,15 @@ async function loadItems() {
 bindCrudForm($("#item-form"), "items", loadAll);
 
 // ---------------------------------------------------------------- Start
+setupVariantSelectors();
 async function loadAll() {
-  await Promise.all([loadInventory(), loadHistory(), loadReorder(), loadItems()]);
+  await Promise.all([
+    loadInventory(), 
+    loadHistory(), 
+    loadReorder(),
+    loadOrders(),
+     loadItems(),
+    ]);
 }
 
 async function start() {

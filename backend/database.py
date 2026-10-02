@@ -64,22 +64,75 @@ def transaction():
     """
     return get_db()
 
-
 def init_db(reset=False):
-    """Opretter tabeller og testdata, hvis databasen er tom. Returnerer True, hvis den blev oprettet."""
+    """Opretter databasen og sikrer, at nødvendige kolonner findes."""
     if reset and os.path.exists(DB_PATH):
         os.remove(DB_PATH)
+
     conn = connect()
-    if conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table'").fetchone()[0]:
+
+    tables_exist = conn.execute(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table'"
+    ).fetchone()[0]
+
+    if tables_exist:
+        columns = [
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(item)").fetchall()
+        ]
+
+        if "barcode" not in columns:
+            conn.execute("ALTER TABLE item ADD COLUMN barcode TEXT")
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_item_barcode "
+                "ON item(barcode) WHERE barcode IS NOT NULL"
+            )
+
+        if "variant_type" not in columns:
+            conn.execute(
+                "ALTER TABLE item ADD COLUMN variant_type TEXT"
+            )
+
+        if "variant_options" not in columns:
+            conn.execute(
+                "ALTER TABLE item ADD COLUMN variant_options TEXT"
+            )
+
+        if "auto_reorder" not in columns:
+             conn.execute(
+               "ALTER TABLE item ADD COLUMN auto_reorder INTEGER NOT NULL DEFAULT 0"
+    )
+
+        if "reorder_quantity" not in columns:
+           conn.execute(
+                "ALTER TABLE item ADD COLUMN reorder_quantity INTEGER NOT NULL DEFAULT 0"
+    )
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS purchase_order (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_number  TEXT NOT NULL UNIQUE,
+                item_id       INTEGER NOT NULL,
+                quantity      INTEGER NOT NULL CHECK (quantity > 0),
+                supplier      TEXT,
+                status        TEXT NOT NULL DEFAULT 'BESTILT',
+                ordered_at   TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+                received_at  TEXT,
+                FOREIGN KEY (item_id) REFERENCES item(id)
+            )
+        """)
+
+        conn.commit()
         conn.close()
         return False
+
     for filename in ("schema.sql", "seed.sql"):
         with open(os.path.join(BASE_DIR, filename), encoding="utf-8") as f:
             conn.executescript(f.read())
+
     conn.commit()
     conn.close()
     return True
-
 
 if __name__ == "__main__":
     created = init_db(reset="--reset" in sys.argv)
