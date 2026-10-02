@@ -6,7 +6,7 @@
 // Åbnes index.html direkte fra disken (file://), sendes kaldene til backendens port på localhost.
 const API_BASE = location.protocol === "file:"
   ? `http://localhost:${document.body.dataset.apiPort}`
-  : location.pathname.replace(/\/[^/]*$/, "");
+  : "https://den-sidste-rejse.onrender.com";
 
 async function api(path, { method = "GET", body, headers = {} } = {}) {
   const response = await fetch(`${API_BASE}/api${path}`, {
